@@ -59,3 +59,48 @@ RANDCHOOSE = LAMBDA(
         INDEX(ARRAY,RANDBETWEEN(1,ROW_COUONT),RANDBETWEEN(1,COLUMN_COUONT))
     )
 );
+/*
+满足值函数，在VLOOKUP的基础上进行迭代，实现了返回全部满足的行数
+默认：返回满足的整行，需要某一列的数值，可填写col参数
+*/
+ZLOOKUP = LAMBDA(
+    VALUE,ARRAY,COL,
+    LET(
+        MIN_ROW,
+        MIN(
+            LAMBDA(
+                    VALUE,
+                    ROW(VALUE)
+                )(ARRAY)
+        ), 
+        MIN_COL,
+        MIN(
+            LAMBDA(
+                    VALUE,
+                    COLUMN(VALUE)
+                )(ARRAY)
+        ),
+        ROW_ARRAY,
+        MAP(
+            INDEX(ARRAY,0,1),
+            LAMBDA(
+                STR,
+                IF(STR=VALUE,ROW(STR)-MIN_ROW+1,9999)
+            )
+        ),
+        ROW_COUNT,
+        MAX(REDUCE(
+                0,
+                INDEX(ARRAY,0,1),
+                LAMBDA(
+                    X,STR,
+                    IF(STR=VALUE,X+1,X
+                )
+            )
+        )),
+        INDEX(
+            TAKE(SORTBY(ARRAY,ROW_ARRAY,1),ROW_COUNT,),0,
+            IF(COL="",0,COL)
+        )
+    )
+);
