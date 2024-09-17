@@ -1,0 +1,61 @@
+/*
+记数函数，与count相像，但是可以计算所有选中的单元格
+*/
+COUNTROW = LAMBDA(
+    ARRAY,
+    LET(
+        ALL_ROWS, LAMBDA(
+                    VALUE,
+                    ROW(VALUE)
+                )(ARRAY),
+        MAX_ROW, MAX(ALL_ROWS),
+        MIN_ROW, MIN(ALL_ROWS),
+        MAX_ROW-MIN_ROW+1
+    )
+);
+COUNTCOLUMN = LAMBDA(
+    ARRAY,
+    LET(
+        ALL_COL, LAMBDA(
+                    VALUE,
+                    COLUMN(VALUE)
+                )(ARRAY),
+        MAX_COLUMN, MAX(ALL_COL),
+        MIN_COLUMN, MIN(ALL_COL),
+        MAX_COLUMN-MIN_COLUMN+1
+    )
+);
+/*
+排(序)空(值)函数，与unique较为相像，但是为排序功能与清空功能；
+默认：升序，可设置resver参数来升序
+*/
+SORTCLEAR = LAMBDA(
+    ARRAY,
+    REVERSE,
+    LET(
+        NUM,COUNTROW(ARRAY),
+        NA_NUM,COUNTA(ARRAY),
+        REVERSE_BOO,IF(REVERSE=1,1,-1),
+        TAKE(SORTBY(ARRAY,ARRAY,REVERSE_BOO),NA_NUM,1)
+    )
+);
+/*
+数组选函数，目的为解决choose的无法使用区域的痛点；
+一般需搭配vstack/hstack来进行数组合并，进行使用
+*/
+XCHOOSE = LAMBDA(
+    NUM,
+    ARRAY,
+    INDEX(ARRAY,NUM,1)
+);
+/*
+随机选函数，生成一个区域的随机数值
+*/
+RANDCHOOSE = LAMBDA(
+    ARRAY,
+    LET(
+        ROW_COUONT,COUNTROW(ARRAY),
+        COLUMN_COUONT,COUNTCOLUMN(ARRAY),
+        INDEX(ARRAY,RANDBETWEEN(1,ROW_COUONT),RANDBETWEEN(1,COLUMN_COUONT))
+    )
+);
