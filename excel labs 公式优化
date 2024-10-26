@@ -1,106 +1,40 @@
-/*
-记数函数，与count相像，但是可以计算所有选中的单元格
-*/
-COUNTROW = LAMBDA(
-    ARRAY,
+ROW_ARRAY = LAMBDA(X,Y,
     LET(
-        ALL_ROWS, LAMBDA(
-                    VALUE,
-                    ROW(VALUE)
-                )(ARRAY),
-        MAX_ROW, MAX(ALL_ROWS),
-        MIN_ROW, MIN(ALL_ROWS),
-        MAX_ROW-MIN_ROW+1
-    )
-);
-COUNTCOLUMN = LAMBDA(
-    ARRAY,
-    LET(
-        ALL_COL, LAMBDA(
-                    VALUE,
-                    COLUMN(VALUE)
-                )(ARRAY),
-        MAX_COLUMN, MAX(ALL_COL),
-        MIN_COLUMN, MIN(ALL_COL),
-        MAX_COLUMN-MIN_COLUMN+1
-    )
-);
-/*
-排(序)空(值)函数，与unique较为相像，但是为排序功能与清空功能；
-默认：升序，可设置resver参数来升序
-*/
-SORTCLEAR = LAMBDA(
-    ARRAY,
-    REVERSE,
-    LET(
-        NUM,COUNTROW(ARRAY),
-        NA_NUM,COUNTA(ARRAY),
-        REVERSE_BOO,IF(REVERSE=1,1,-1),
-        TAKE(SORTBY(ARRAY,ARRAY,REVERSE_BOO),NA_NUM,1)
-    )
-);
-/*
-数组选函数，目的为解决choose的无法使用区域的痛点；
-一般需搭配vstack/hstack来进行数组合并，进行使用
-*/
-XCHOOSE = LAMBDA(
-    NUM,
-    ARRAY,
-    INDEX(ARRAY,NUM,1)
-);
-/*
-随机选函数，生成一个区域的随机数值
-*/
-RANDCHOOSE = LAMBDA(
-    ARRAY,
-    LET(
-        ROW_COUONT,COUNTROW(ARRAY),
-        COLUMN_COUONT,COUNTCOLUMN(ARRAY),
-        INDEX(ARRAY,RANDBETWEEN(1,ROW_COUONT),RANDBETWEEN(1,COLUMN_COUONT))
-    )
-);
-/*
-满足值函数，在VLOOKUP的基础上进行迭代，实现了返回全部满足的行数
-默认：返回满足的整行，需要某一列的数值，可填写col参数
-*/
-ZLOOKUP = LAMBDA(
-    VALUE,ARRAY,COL,
-    LET(
-        MIN_ROW,
-        MIN(
+        ARR, MAP(
+            X,
             LAMBDA(
-                    VALUE,
-                    ROW(VALUE)
-                )(ARRAY)
-        ), 
-        MIN_COL,
-        MIN(
-            LAMBDA(
-                    VALUE,
-                    COLUMN(VALUE)
-                )(ARRAY)
-        ),
-        ROW_ARRAY,
-        MAP(
-            INDEX(ARRAY,0,1),
-            LAMBDA(
-                STR,
-                IF(STR=VALUE,ROW(STR)-MIN_ROW+1,9999)
-            )
-        ),
-        ROW_COUNT,
-        MAX(REDUCE(
-                0,
-                INDEX(ARRAY,0,1),
-                LAMBDA(
-                    X,STR,
-                    IF(STR=VALUE,X+1,X
-                )
-            )
-        )),
-        INDEX(
-            TAKE(SORTBY(ARRAY,ROW_ARRAY,1),ROW_COUNT,),0,
-            IF(COL="",0,COL)
+                Z,ROW(Z)
+            )),
+        IF(
+            ISOMITTED(Y),
+            ARR,
+            MAX(ARR)-MIN(ARR)+1
         )
     )
 );
+COL_ARRAY = LAMBDA(X,Y,
+    LET(
+        ARR, MAP(
+            X,
+            LAMBDA(
+                Z,COLUMN(Z)
+            )),
+        IF(
+            ISOMITTED(Y),
+            ARR,
+            MAX(ARR)-MIN(ARR)+1
+        )
+    )
+);
+CLEAR_ARRAY = LAMBDA(X,
+    LET(
+        ZERO_NUM,COUNTIF(X,""),
+        SORT_ARR, MAP(X,
+                        LAMBDA(Y,
+                            IF(Y<>"",ROW(Y),1048576)
+                        )
+                    ),
+        OUT_ARR, SORTBY(X,SORT_ARR,1),
+        FILTER(OUT_ARR,OUT_ARR<>0)
+    )
+)
