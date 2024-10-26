@@ -1,40 +1,38 @@
-ROW_ARRAY = LAMBDA(X,Y,
+ROW_AYY = LAMBDA(ROW_ARRAY,ANY,
     LET(
-        ARR, MAP(
-            X,
-            LAMBDA(
-                Z,ROW(Z)
-            )),
+        ARR, MAP(ROW_ARRAY,
+            LAMBDA(Y,ROW(Y))
+        ),
         IF(
-            ISOMITTED(Y),
+            ISOMITTED(ANY),
             ARR,
             MAX(ARR)-MIN(ARR)+1
         )
     )
 );
-COL_ARRAY = LAMBDA(X,Y,
+COL_AYY = LAMBDA(COL_ARRAY,ANY,
     LET(
-        ARR, MAP(
-            X,
-            LAMBDA(
-                Z,COLUMN(Z)
-            )),
+        ARR, MAP(COL_ARRAY,
+            LAMBDA(Y,COLUMN(Y))
+        ),
         IF(
-            ISOMITTED(Y),
+            ISOMITTED(ANY),
             ARR,
             MAX(ARR)-MIN(ARR)+1
         )
     )
 );
-CLEAR_ARRAY = LAMBDA(X,
+CLEAN_ARRAY = LAMBDA(
+    X,
     LET(
-        ZERO_NUM,COUNTIF(X,""),
-        SORT_ARR, MAP(X,
-                        LAMBDA(Y,
-                            IF(Y<>"",ROW(Y),1048576)
+        ZERO_NUM, COUNTIF(TAKE(X,,1),""),
+        SORT_ARR, MAP(
+                        TAKE(X,,1),
+                        LAMBDA(
+                            Y,
+                            IF(Y<>"",ROW(Y),1048577)
                         )
                     ),
-        OUT_ARR, SORTBY(X,SORT_ARR,1),
-        FILTER(OUT_ARR,OUT_ARR<>0)
+        TAKE(SORTBY(X,SORT_ARR),ROW_AYY(TAKE(X,,1),1)-ZERO_NUM,)
     )
 )
