@@ -24,17 +24,17 @@ COL_AYY = LAMBDA(COL_ARRAY,ANY,
     )
 );
 CLEAN_ARRAY = LAMBDA(
-    X,
+    ARRAY,
     LET(
-        ZERO_NUM, COUNTIF(TAKE(X,,1),""),
+        ZERO_NUM, COUNTIF(TAKE(ARRAY,,1),""),
         SORT_ARR, MAP(
-                        TAKE(X,,1),
+                        TAKE(ARRAY,,1),
                         LAMBDA(
                             Y,
                             IF(Y<>"",ROW(Y),1048577)
                         )
                     ),
-        TAKE(SORTBY(X,SORT_ARR),ROW_AYY(TAKE(X,,1),1)-ZERO_NUM,)
+        TAKE(SORTBY(ARRAY,SORT_ARR),ROW_AYY(TAKE(ARRAY,,1),1)-ZERO_NUM,)
     )
 );
 /*基本函数，连续选择函数，随机抽取函数，坍塌函数*/
@@ -52,7 +52,7 @@ XCHOOSE = LAMBDA(
                         COL_NUM_TWO, ROUNDUP(INDEX_NUM/ROW_NUM,0),
                         ROW_NUM_TWO, INDEX_NUM-(COL_NUM_TWO-1)*ROW_NUM,
                         INDEX(ARRAY,ROW_NUM_TWO,COL_NUM_TWO)
-                    )
+                    ),""
                 )
             )
         )
@@ -84,5 +84,41 @@ COLLAPSE = LAMBDA(
                 ),""
             )
         )
+    )
+);
+/*高级函数,满足返回函数，重复数量显示函数，重复值获取函数*/
+// bool为0时对第一行进行查找，为1则查找第一列
+ZLOOKUP = LAMBDA(
+    index,array,bool,
+    IF(bool =1,
+        LET(
+            row_count,ROW_AYY(array,1),
+            ok_array,LAMBDA(x,IF(INDEX(array,x,1)=index,x,1048577))(SEQUENCE(row_count,1,1,1)),
+            ok_count,SUM(LAMBDA(x,IF(INDEX(array,x,1)=index,1,0))(SEQUENCE(row_count,1,1,1))),
+            IF(ok_count=0,NA(),TAKE(SORTBY(array,ok_array,1),ok_count,))
+        ),
+        IF(bool=0,
+            LET(
+                new_arr,TRANSPOSE(array),
+                col_count,COL_AYY(array,1),
+                ok_array,LAMBDA(x,IF(INDEX(array,1,x)=index,x,16385))(SEQUENCE(col_count,1,1,1)),
+                ok_count,SUM(LAMBDA(x,IF(INDEX(new_arr,x,1)=index,1,0))(SEQUENCE(col_count,1,1,1))),
+                IF(ok_count=0,NA(),TRANSPOSE(TAKE(SORTBY(new_arr,ok_array,1),ok_count,)))
+            ),NA()
+        )
+    )
+);
+REPT_NUM = LAMBDA(
+    array,
+    LET(
+        new_arr, COLLAPSE(array,,1),
+        COUNTA(new_arr)-COUNTA(UNIQUE(new_arr))
+    )
+);
+REPT_GET = LAMBDA(
+    array,
+    LET(
+        new_arr, COLLAPSE(array,,1),
+        UNIQUE(new_arr)
     )
 )
