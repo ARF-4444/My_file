@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>娘化DeepSeek</title>
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
+    <!--    <link rel="stylesheet" href="../dist/waifu.css">-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: "ZCOOL KuaiLe", sans-serif; /* 设置字体为ZCOOL KuaiLe */
+            font-weight: 400; /* 设置粗细为 Medium */
+            font-size: 16px; /* 设置字体大小一致 */
+        }
+
+        div {
+            font-weight: 400; /* 设置粗细为 Medium */
+            font-size: 16px; /* 设置字体大小一致 */
+            margin-right: 10px;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f5f5f5;
+            position: relative;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #live2d {
+            cursor: pointer;
+            width: calc(min(100vw, 100vh) * 0.75);
+            height: calc(min(100vw, 100vh) * 0.75);
+            display: flex;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            margin: auto; /* 如果需要在父容器中居中 */
+        }
+
+        #touchMessage {
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            white-space: pre-wrap; /* 保留换行符和空白符 */
+            word-wrap: break-word; /* 确保长单词或无法用断点的URL强制换行 */
+        }
+
+        .btn-refresh, #refresh, #refresh-left {
+            padding: 8px 16px; /* 调整大小为矩形 */
+            font-size: 24px; /* 确保字体大小一致 */
+            border-radius: 8px; /* 圆角矩形 */
+            cursor: pointer;
+        }
+
+        /* 右侧按钮 */
+        #refresh {
+            position: absolute;
+            top: 40px;
+            left: 40px; /* 右侧按钮移动到左侧 */
+            background-color: #007bff;
+            color: white;
+        }
+
+        #refresh:hover {
+            background-color: #0056b3;
+        }
+
+        #all {
+            position: relative;
+            margin: 50px auto;
+            bottom: 2%;
+            width: 280px;
+            height: 400px
+        }
+
+        /* 设置绝对定位的元素 */
+        #waifu-tips {
+            width: 480px;
+            display: none; /* 初始隐藏 */
+            position: absolute; /* 绝对定位 */
+            bottom: 65%;
+            justify-content: center; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            transform: translate(-20%, -10%);
+            font-size: 24px;
+        }
+
+        .alert-info {
+            width: 450px;
+            position: absolute; /* 绝对定位 */
+            /*bottom: 40%; !* 距离底部90px *!*/
+            /*right: 25%; !* 距离右侧20px *!*/
+            /*padding: 10px;*/
+            display: flex; /* 使用flex布局 */
+            justify-content: flex-start; /* 水平居中 */
+            align-items: center; /* 垂直居中 */
+            top: 80%; /* 距离顶部50% */
+            left: 50%; /* 距离左侧50% */
+            transform: translate(-50%, -50%);
+            font-size: 16px; /* 设置相同字体大小 */
+        }
+
+        #refresh-left {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background-color: #ff69b4;
+            color: white;
+            padding: 8px 16px;
+            font-size: 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #refresh-left:hover {
+            background-color: #ff4d94;
+        }
+
+        /* 对话框容器 */
+        #dialog {
+            display: none; /* 初始状态隐藏 */
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 50%; /* 占据右半边页面 */
+            background-color: white;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease; /* 滑入动画 */
+            transform: translateX(100%); /* 初始位置在右侧隐藏 */
+            z-index: 1000;
+            border-top-left-radius: 15px; /* 圆角矩形 */
+            border-bottom-left-radius: 15px;
+        }
+
+        #dialog.active {
+            display: block;
+            transform: translateX(0); /* 点击后滑入 */
+        }
+
+        /* 对话框头部 */
+        .dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #ddd;
+            background-color: #f8f9fa; /* Bootstrap 背景色 */
+        }
+
+        .dialog-header h4 {
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* .close-btn 放置在最右侧 */
+        .close-btn {
+            display: flex; /* 使 .close-btn 成为 flex 容器 */
+            align-items: center; /* 垂直居中 */
+            margin-left: auto; /* 自动 margin，推到最右侧 */
+        }
+
+        /* 如果需要调整图标的大小 */
+        #clear-dialog, #clear-del {
+            font-size: 1.5rem; /* 根据需要调整 */
+            color: #666; /* 根据需要调整 */
+            margin-right: 40px; /* 图标之间的间距 */
+            cursor: pointer;
+        }
+
+        /* 对话框主体 */
+        .dialog-body {
+            height: calc(100vh - 50px); /* 减去头部高度 */
+            background-color: #fff;
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem;
+            border-radius: 1rem;
+            animation: fadeIn 0.3s ease-in;
+            white-space: pre-wrap; /* 保留换行符和空白符 */
+            word-wrap: break-word; /* 确保长单词或无法用断点的URL强制换行 */
+            margin-bottom: 1.5rem; /* 为每个消息添加底部间距 */
+        }
+
+        .bot-message {
+            letter-spacing: 3px; /* 字符间距 */
+            background: var(--card-bg);
+            border: 1px solid #e2e8f0;
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-message {
+            letter-spacing: 3px; /* 字符间距 */
+            background: var(--primary-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+    </style>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+<div id="body">
+
+</div>
+<canvas id="live2d" width="800" height="800"></canvas>
+<i id="refresh-left" class="fa fa-comment btn-refresh-left"></i> <!-- 左侧按钮替换为对话图标 -->
+<div id="waifu">
+    <div id="waifu-tool">
+        <span id="waifu-tool-switch-model">
+            <i id="refresh" class="fa fa-sync-alt btn-refresh"></i> <!-- 左侧按钮与右侧按钮对调 -->
+        </span>
+    </div>
+</div>
+
+
+<!--消息框-->
+<div id="touchMessage" class="waifu-tips"></div>
+
+<div id="all">
+    <div id="waifu-tips"></div>
+    <!-- 提示框 -->
+    <div class="alert alert-info" role="alert">
+        <i class="bi bi-question-circle" style="margin-right: 10px; font-size: 110%;"></i>
+        <input id="user-input" type="text" class="form-control" placeholder="赶紧开始调戏人家啦~~"
+               style="height: 35px; margin: 0 17px 0 10px; width: 85%; display: inline-block;letter-spacing: 4px">
+        <button id="send-btn" type="button" class="btn btn-primary"
+                style="display: inline-block; margin-left: 10px; padding: 5px 15px; vertical-align: top; white-space: nowrap; font-size: 14px;">
+            提交
+        </button>
+    </div>
+</div>
+
+<!-- 对话框 -->
+<div id="dialog" class="dialog-container">
+    <div class="dialog-content">
+        <div class="dialog-header">
+            <h4 class="mb-0">历史对话记录</h4>
+            <div class="close-btn">
+                <span id="clear-dialog" class="fas fa-sync-alt close-btn"></span>
+                <span id="clear-del" class="bi bi-x-lg close-btn"></span>
+            </div>
+        </div>
+        <div class="dialog-body">
+            <div id="dialog-content" class="list-group"></div>
+        </div>
+    </div>
+</div>
+
+
+<script src="{{ url_for('static', filename='live2d.min.js') }}"></script>
+<script src="{{ url_for('static', filename='waifu-tips.js') }}"></script>
+<script src="{{ url_for('static', filename='autoload.js') }}"></script>
+<script>
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+    const typingIndicator = document.getElementById('touchMessage');
+
+    const refreshLeft = document.getElementById('refresh-left');
+    const dialog = document.getElementById('dialog');
+    const clearDialog = document.getElementById('clear-dialog');
+    const clear = document.getElementById('clear-del');
+    const dialogContent = document.getElementById('dialog-content');
+    const alertMessage = document.getElementById('touchMessage');
+
+    window.addEventListener("load", () => {
+        "use strict";
+
+        const apiPath = "https://live2d.fghrsh.net/api";
+        let state = 0, loading = false,
+            modelId = localStorage.getItem("modelId"),
+            modelTexturesId = localStorage.getItem("modelTexturesId");
+        if (modelId === null) {
+            modelId = 1;
+            modelTexturesId = 53;
+        }
+        loadModel(modelId, modelTexturesId);
+
+        function loadModel(modelId, modelTexturesId) {
+            localStorage.setItem("modelId", modelId);
+            if (modelTexturesId === undefined) modelTexturesId = 0;
+            localStorage.setItem("modelTexturesId", modelTexturesId);
+            loadlive2d("live2d", `${apiPath}/get/?id=${modelId}-${modelTexturesId}`);
+            console.log("live2d", `模型 ${modelId}-${modelTexturesId} 加载完成`);
+            setTimeout(() => {
+                state = 2;
+            }, 2000);
+        }
+
+        function loadRandModel() {
+            const modelId = localStorage.getItem("modelId"),
+                modelTexturesId = localStorage.getItem("modelTexturesId");
+            fetch(`${apiPath}/rand_textures/?id=${modelId}-${modelTexturesId}`)
+                .then(response => response.json())
+                .then(result => {
+                    loadModel(modelId, result.textures.id);
+                    setTimeout(() => {
+                        state = 2;
+                        loading = false;
+                    }, 1000);
+                });
+        }
+
+        document.getElementById("refresh").addEventListener("click", () => {
+            if (loading) return;
+            state = 0;
+            loading = true;
+            setTimeout(loadRandModel, 1000);
+        });
+    });
+
+    // 发送消息
+    async function sendMessage() {
+        const message = userInput.value.trim();
+        userInput.value = ''; // 清空输入框
+        userInput.placeholder = '请等待...'; // 设置输入框高度
+        userInput.disabled = true;
+        if (!message || sendBtn.classList.contains('loading')) return;
+        addDiv(message, 'user');
+
+        try {
+            // 模拟发送消息
+            sendBtn.classList.add('loading'); // 添加加载状态
+            console.log('正在发送消息:', message);
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({message})
+            });
+
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+            const data = await response.json();
+            addMessage(data.response || data.error, 'bot');
+            addDiv(data.response || data.error, 'bot');
+        } catch (error) {
+            addMessage(`请求失败: ${error.message}`, 'bot');
+            addDiv(`请求失败: ${error.message}`, 'bot');
+        } finally {
+            userInput.placeholder = '赶紧开始调戏人家啦~~'; // 设置输入框高度
+            userInput.disabled = false; // 设置输入框高度
+        }
+    }
+
+    // 添加消息到对话
+    function addMessage(content, role) {
+        typingIndicator.style.display = 'flex';
+        typingIndicator.name = `message ${role}-message`;
+        typingIndicator.textContent = content;
+        console.log(typingIndicator.textContent + " and " + typingIndicator.name);
+
+        setTimeout(() => {
+            sendBtn.classList.remove('loading');
+            typingIndicator.textContent = "";
+            typingIndicator.name = "";
+            typingIndicator.style.display = 'none';
+        }, 5000);
+    }
+
+    function addDiv(content, role) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${role}-message`;
+        messageDiv.textContent = content;
+
+        console.log(messageDiv.textContent + " and " + messageDiv.className);
+        console.log(messageDiv);
+
+        dialogContent.appendChild(messageDiv);
+        dialogContent.scrollTop = dialogContent.scrollHeight;
+    }
+
+    // 事件监听
+    sendBtn.addEventListener('click', sendMessage);
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+            const targetElement = document.getElementById("live2d");
+            let clickCount = 0; // 用于记录点击次数
+            const requiredClicks = 5; // 设置需要连续点击的次数
+
+            targetElement.addEventListener("click", function () {
+                clickCount++; // 每次点击时，点击次数加1
+                console.log(`连续点击 ${clickCount} 次`);
+
+                // 检查是否达到指定的点击次数
+                if (clickCount >= requiredClicks) {
+                    // 改变元素的属性，例如改变背景颜色
+                    const new_options = document.getElementById("waifu-tips");
+                    new_options.style.display = "flex";
+                    targetElement.style.color = "#FF0000";
+                    console.log("属性已改变！");
+
+                    setTimeout(() => {
+                        // 重置点击次数
+                        clickCount = 0;
+                        new_options.style.display = "none";
+                    }, 5000); // 5秒后执行回调函数
+                }
+            });
+        }
+    );
+
+    // 显示对话框
+    function showMessages() {
+        if (!refreshLeft.disabled) {
+            dialog.classList.add('active');
+        }
+    }
+
+
+    // 事件绑定
+    refreshLeft.addEventListener('click', () => {
+        // 检查页面宽高
+        if (window.innerWidth < window.innerHeight) {
+            alertMessage.innerHTML = '请将页面横屏显示哟~';
+            alertMessage.style.display = 'block';
+            alertMessage.style.letterSpacing = "6px"; // 字母间距
+            setTimeout(() => {
+                alertMessage.style.display = 'none';
+                alertMessage.style.letterSpacing = "0"; // 字母间距
+            }, 2000);
+        } else {
+            // 如果页面宽高符合条件，显示对话框
+            showMessages();
+        }
+    });
+    clearDialog.addEventListener('click', function () {
+        dialogContent.innerHTML = '';
+    });
+    clear.addEventListener('click', function () {
+        dialog.classList.remove('active'); // 关闭对话框
+    });
+</script>
+
+</body>
+</html>
