@@ -1,0 +1,94 @@
+import base64
+import calendar
+import math
+import pandas
+from urllib.parse import quote, unquote
+import shutil
+import requests
+import os
+import random
+import socket
+import struct
+import time
+
+import sqlite3
+import pyautogui
+import tinycss
+from pynput.keyboard import Key, Controller
+import whisper
+import torch
+from pydub import AudioSegment
+
+
+#  字幕生成
+class GetSrt:
+    def __init__(self, video_file_path: str, mp3_file_path: str, boo: bool = False):
+        if video_file_path == '':
+            video_file_path = "C:\\Users\\Administrator\\Desktop\\a.mp4"  # 输入的音频文件
+        if mp3_file_path == '':
+            mp3_file_path = "..\\get\\mp3\\output_audio.mp3"  # 输出的MP3文件
+        self.txt_file_path = "..\\get\\mp3\\output_audio.txt"  # 输出的TXT文件
+
+        # 转换音频为 wav
+        self.video_to_mp3(video_file_path, mp3_file_path)
+
+        # 转录音频并生成 SRT 字幕
+        self.audio_to_srt(self.execute(boo), mp3_file_path)
+        print(f"字幕已保存为： {mp3_file_path.replace('.mp3', '.srt')}")
+        # print(f"txt副本已保存为： {self.txt_file_path}")
+
+    def execute(self, boo):
+        out_str = "cuda" if torch.cuda.is_available() else "cpu"
+        if boo:
+            out_str = "cpu"
+        device = torch.device(out_str)
+        # 加载模型时显式指定映射到 CPU 或 GPU
+        try:
+            # model参数：medium，large
+            model = whisper.load_model("large", device=str(device))
+            print(f"正在进行中({out_str})...")
+            return model
+        except RuntimeError as e:
+            print(f"Error during model loading: {e}")
+            return None
+
+    # 转换音频文件为 wav 格式
+    def video_to_mp3(self, input_file, output_file):
+        audio = AudioSegment.from_file(input_file, format=input_file.split('.')[-1])
+        # audio = audio.set_channels(1).set_frame_rate(16000)  # 设置为单声道和16000Hz
+        audio.export(output_file, format="mp3")  # 转换为MP3
+
+    # 音频转文本并生成 SRT 字幕文件
+    def audio_to_srt(self, model_file, audio_file):
+        if model_file is None:
+            return
+            # 使用 Whisper 模型转录音频
+        # result = model.transcribe(audio_file, language="zh")
+        result = model_file.transcribe(audio_file, temperature=0.7, condition_on_previous_text=True)
+
+        # 打开一个 SRT 文件来保存字幕
+        srt_file = audio_file.replace(".mp3", ".srt")
+        self.save(srt_file, result)
+        # 暂且无效，因为有错别字，必须修改后才可转换
+        # self.save(self.txt_file_path, result)
+
+    # 为了后续快速在腾讯交互翻译上进行翻译，独立化保存，以便保留txt文件
+    def save(self, path, lst):
+        with open(path, "w", encoding='utf-8') as f:
+            for i, segment in enumerate(lst['segments']):
+                start = segment['start']
+                end = segment['end']
+                text = segment['text']
+
+                # SRT 格式：编号 时间 起止 时间 文本
+                f.write(f"{i + 1}\n")
+                f.write(f"{self.format_time(start)} --> {self.format_time(end)}\n")
+                f.write(f"{text}\n\n")
+
+    # 格式化时间为 SRT 时间戳格式
+    def format_time(self, seconds):
+        house = int(seconds // 60 // 60)
+        minutes = int(seconds // 60)
+        seconds = seconds % 60
+        milliseconds = int((seconds % 1) * 1000)
+        return f"{house:02}:{minutes:02}:{int(seconds):02},{milliseconds:03}"
