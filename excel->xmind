@@ -1,0 +1,109 @@
+# Xmind自动化(数据为pandas数据)
+class AutoXmind:
+    def __init__(self, _df, start_time: float = 0.08, press_time: float = 0.35, _str: str = ''):
+        """
+        :param _df: pandas数据
+        :param start_time: 打字缓冲
+        :param press_time: 快捷键缓冲
+        :param _str: 未端包含的分隔符
+        """
+        if isinstance(_df, pandas.DataFrame):
+            self.df = _df
+        else:
+            self.df = self._all_input()
+        self.start_time = start_time
+        self.press_time = press_time
+        self._str = _str
+        self.num = len(self.df.columns.values)
+        self._run()
+
+    # 多行输入函数，可直接粘贴，ctrl+d停止输入
+    @staticmethod
+    def _all_input() -> pandas.DataFrame:
+        print('请输入：')
+        _txt = ''
+        # ctrl+d结束
+        while True:
+            try:
+                _txt += (input('') + '\n')
+            except:
+                break
+
+        _txt = _txt.strip()
+        _lst = []
+        for i in _txt.split('\n'):
+            try:
+                assert '#' in i
+                if i.find('#') == 0:
+                    _lst.append([i.replace('#', '').strip(), ''])
+                else:
+                    _lst.append([i.split(' # ')[0].strip(), i.split(' # ')[1].strip()])
+            except:
+                if i.strip() != '':
+                    _lst.append([i.replace(' ', '').strip(), ''])
+                continue
+
+        return pandas.DataFrame(_lst)
+
+    def _run(self):
+        print(self.df)
+        count = 0  # 统计多少个tab分支
+        keyboard = Controller()  # 实例化控制包
+        pyautogui.FAILSAFE = False  # 安全故障机制，莫名其妙
+        # 缓冲时间
+        for _ in range(3):
+            time.sleep(1)
+            print(f'还有{3 - _}秒开始！')
+
+        # 遍历第一列的每行元素
+        for key, _info in enumerate(self.df[0]):
+            # 仅操作第一列元素
+            for _one in str(_info):
+                keyboard.type(_one)  # 键入每个元素的每个字符
+                time.sleep(self.start_time)  # 缓冲
+            keyboard.press(Key.enter)  # 回车
+            time.sleep(self.press_time)  # 回车缓冲，信息1刻入输入完成
+
+            # 操作当前行的后续所有元素
+            for index in range(1, self.num):
+                if str(self.df[index][key]) != '':
+                    keyboard.press(Key.tab)  # 如果数据不为空则tab(假设不存在中间为空的情况)
+                    time.sleep(self.press_time)  # 完成后的缓冲
+
+                    # 增加指定分隔符回车的机制，使其实现多个子级文本的输入
+                    if self._str in str(self.df[index][key]):
+                        str_lst = str(self.df[index][key]).split(self._str)
+                        for count_num, one_str in enumerate(str_lst):
+                            # 刻入当前列的每个元素
+                            for _ in str(one_str):
+                                keyboard.type(_)  # 键入每个元素的每个字符
+                                time.sleep(self.start_time)  # 缓冲
+
+                            # 快捷键
+                            if count_num != len(str_lst) - 1:
+                                # 回车两次加该级别分支
+                                keyboard.press(Key.enter)  # 回车
+                                time.sleep(self.press_time)  # 缓冲
+                                keyboard.press(Key.enter)  # 回车
+                                time.sleep(self.press_time)  # 缓冲
+                    else:
+                        # 刻入当前元素的每个字符
+                        for _ in str(self.df[index][key]):
+                            keyboard.type(_)  # 键入每个元素的每个字符
+                            time.sleep(self.start_time)  # 缓冲
+
+                    count += 1  # tab分支增加
+                    keyboard.press(Key.enter)  # 回车
+                    time.sleep(self.press_time)  # 回车缓冲，信息2..end刻入完成
+
+            # 完成当前行的所有元素后，回退到上一层分支，直到回到第一层分支
+            for _ in range(count):
+                keyboard.press(Key.left)  # 向左移动
+                time.sleep(self.press_time)  # 缓冲
+
+            # 如果当前行不是最后一行，则新建分支
+            if key != len(self.df) - 1:
+                keyboard.press(Key.enter)
+                time.sleep(self.press_time)  # 回车新建
+
+            count = 0  # 执行一行后，tab清零
