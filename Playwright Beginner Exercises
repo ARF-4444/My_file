@@ -1,0 +1,82 @@
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+from playwright.async_api import async_playwright
+from playwright.async_api import expect
+from pymongo import MongoClient
+
+
+async def run(n):
+    async with async_playwright() as playwright:
+        b = await playwright.chromium.launch(headless=False)
+        context = await b.new_context()
+        page = await context.new_page()
+        await page.goto(f"https://www.animetox.com/page/{n}?s=ost", timeout=3600000)
+        url_lst = page.locator("//html/body/div[1]/div/div[3]/main/section[2]/div/div/article[*]/a")
+        count = await url_lst.count()
+
+        # 使用 asyncio.gather 来实现并发
+        lst = []
+        tasks = [tool(await context.new_page(), await url_lst.nth(i).get_attribute("href")) for i in range(count)]
+        res = await asyncio.gather(*tasks, return_exceptions=True)
+        for r in res:
+            if r is not None and not isinstance(r, Exception):
+                lst.append(r)
+
+        await context.close()
+        await b.close()
+        return lst
+
+
+async def tool(p, url):
+    await p.goto(url, timeout=3600000)
+    try:
+        await expect(p.locator("#verifycode")).to_be_visible()
+        await p.locator("#verifycode").click()
+        await p.locator("#verifycode").fill("2001")
+        await p.get_by_role("button", name="提交查看").click()
+        # 执行JavaScript代码，滚动到页面底部
+        await p.evaluate('''() => {
+                    window.scrollTo(0, document.body.scrollHeight);
+                }''')
+        return await do(p)
+    except:
+        try:
+            return await do(p)
+        except:
+            print(f"ERROR: {url}")
+            return None
+
+
+async def do(page2):
+    href = await page2.locator('//a[@target="_blank"]').nth(0).get_attribute("href")
+    name = await page2.locator('//a[@target="_blank"]').nth(0).text_content()
+    if 'ost' in name.lower():
+        return {'title': name, 'href': href}
+    else:
+        raise ValueError("无链接")
+
+
+def run_process(n):
+    try:
+        return asyncio.run(run(n))
+    except:
+        print(f"NO SUCCESS: https://www.animetox.com/page/{n}?s=ost")
+        return []
+
+
+if __name__ == '__main__':
+    all_lst = []
+    # 连接到MongoDB服务器，默认连接到本机的27017端口
+    client = MongoClient('mongodb://localhost:27017/')
+    db = client['my_data']
+    collection = db['python_anime']
+
+    # max_workers太大触发反爬
+    with ProcessPoolExecutor(max_workers=2) as executor:
+        results = list(executor.map(run_process, range(1, 6)))
+    for result in results:
+        all_lst += result
+
+    collection.insert_many(all_lst)
+    print(f"全部数据已经插入完成(*´∀`)~♥")
+    client.close()
